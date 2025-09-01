@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, TrendingDown } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface StockCardProps {
   symbol: string;
@@ -11,9 +12,17 @@ interface StockCardProps {
 
 export const StockCard = ({ symbol, company, price, change, changePercent }: StockCardProps) => {
   const isPositive = change >= 0;
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    navigate(`/stock/${symbol}`);
+  };
   
   return (
-    <Card className="gradient-card border-border/50 hover:border-border transition-all duration-300 hover:scale-105">
+    <Card 
+      className="gradient-card border-border/50 hover:border-border transition-all duration-300 hover:scale-105 cursor-pointer"
+      onClick={handleClick}
+    >
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div>

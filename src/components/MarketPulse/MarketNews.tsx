@@ -1,8 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, ExternalLink } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export const MarketNews = () => {
+  const navigate = useNavigate();
   const news = [
     {
       id: 1,
@@ -62,7 +64,10 @@ export const MarketNews = () => {
           <div key={item.id} className="space-y-3 pb-4 border-b border-border/30 last:border-b-0 last:pb-0">
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1">
-                <h4 className="font-semibold text-foreground leading-tight hover:text-primary cursor-pointer transition-colors">
+                <h4 
+                  className="font-semibold text-foreground leading-tight hover:text-primary cursor-pointer transition-colors"
+                  onClick={() => navigate(`/news/${item.id}`)}
+                >
                   {item.title}
                 </h4>
                 <p className="text-sm text-muted-foreground mt-1 line-clamp-2">

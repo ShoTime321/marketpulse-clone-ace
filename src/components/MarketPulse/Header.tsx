@@ -1,8 +1,20 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Bell, Search, Settings, User } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export const Header = () => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/stock/${searchQuery.trim().toUpperCase()}`);
+      setSearchQuery("");
+    }
+  };
   return (
     <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto px-6 py-4">
@@ -17,13 +29,15 @@ export const Header = () => {
 
           {/* Search */}
           <div className="flex-1 max-w-md mx-8">
-            <div className="relative">
+            <form onSubmit={handleSearch} className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
-                placeholder="Search stocks, ETFs, or crypto..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search stocks (e.g., AAPL, TSLA)..." 
                 className="pl-10 bg-background/50 border-border/50 focus:border-primary"
               />
-            </div>
+            </form>
           </div>
 
           {/* Actions */}
