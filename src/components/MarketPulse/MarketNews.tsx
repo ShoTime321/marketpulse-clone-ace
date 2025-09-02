@@ -1,56 +1,135 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, ExternalLink } from "lucide-react";
+import { Clock, ExternalLink, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { StockApiService } from "@/services/stockApi";
+
+interface NewsArticle {
+  title: string;
+  url: string;
+  time_published: string;
+  summary: string;
+  source: string;
+  overall_sentiment_score?: number;
+}
 
 export const MarketNews = () => {
   const navigate = useNavigate();
-  const news = [
+  const [news, setNews] = useState<NewsArticle[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchNews = async () => {
+      try {
+        const apiKey = StockApiService.getApiKey();
+        if (apiKey) {
+          const liveNews = await StockApiService.getMarketNews();
+          if (liveNews.length > 0) {
+            setNews(liveNews);
+          } else {
+            setNews(fallbackNews);
+          }
+        } else {
+          setNews(fallbackNews);
+        }
+      } catch (error) {
+        console.error('Error fetching news:', error);
+        setNews(fallbackNews);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNews();
+  }, []);
+
+  const fallbackNews: NewsArticle[] = [
     {
-      id: 1,
       title: "Apple Reports Strong Q4 Earnings, Beats Expectations",
       summary: "Apple Inc. reported quarterly earnings that exceeded analyst expectations, driven by strong iPhone sales...",
-      time: "2 hours ago",
+      time_published: "20240902T120000",
       source: "MarketWatch",
-      category: "Earnings",
-      impact: "positive"
+      url: "#",
+      overall_sentiment_score: 0.2
     },
     {
-      id: 2,
       title: "Federal Reserve Signals Potential Rate Cuts",
       summary: "Fed officials hint at possible interest rate adjustments in response to economic indicators...",
-      time: "4 hours ago",
+      time_published: "20240902T100000",
       source: "Reuters",
-      category: "Policy",
-      impact: "neutral"
+      url: "#",
+      overall_sentiment_score: 0.0
     },
     {
-      id: 3,
       title: "Tesla Stock Surges on Autonomous Vehicle News",
       summary: "Tesla shares climb after announcing breakthrough in self-driving technology development...",
-      time: "6 hours ago",
+      time_published: "20240902T080000",
       source: "Bloomberg",
-      category: "Technology",
-      impact: "positive"
+      url: "#",
+      overall_sentiment_score: 0.3
     },
     {
-      id: 4,
       title: "Oil Prices Drop Amid Global Supply Concerns",
       summary: "Crude oil futures decline as geopolitical tensions ease and supply chain issues resolve...",
-      time: "8 hours ago",
+      time_published: "20240902T060000",
       source: "Financial Times",
-      category: "Commodities",
-      impact: "negative"
+      url: "#",
+      overall_sentiment_score: -0.2
     }
   ];
 
-  const getImpactColor = (impact: string) => {
-    switch (impact) {
-      case 'positive': return 'bg-success/20 text-success';
-      case 'negative': return 'bg-danger/20 text-danger';
-      default: return 'bg-muted/20 text-muted-foreground';
+  const getImpactColor = (score?: number) => {
+    if (!score) return 'bg-muted/20 text-muted-foreground';
+    if (score > 0.1) return 'bg-success/20 text-success';
+    if (score < -0.1) return 'bg-danger/20 text-danger';
+    return 'bg-muted/20 text-muted-foreground';
+  };
+
+  const getImpactLabel = (score?: number) => {
+    if (!score) return 'neutral';
+    if (score > 0.1) return 'positive';
+    if (score < -0.1) return 'negative';
+    return 'neutral';
+  };
+
+  const formatTime = (timeString: string) => {
+    if (timeString.includes('T')) {
+      const date = new Date(timeString);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      return diffHours < 24 ? `${diffHours} hours ago` : date.toLocaleDateString();
+    }
+    return timeString;
+  };
+
+  const handleNewsClick = (article: NewsArticle) => {
+    if (article.url && article.url !== '#') {
+      window.open(article.url, '_blank');
+    } else {
+      const articleId = encodeURIComponent(article.title.replace(/\s+/g, '-').toLowerCase());
+      navigate(`/news/${articleId}`, { state: { article } });
     }
   };
+
+  if (loading) {
+    return (
+      <Card className="gradient-card border-border/50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-foreground">
+            📈 Market News
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-muted-foreground">Loading latest news...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="gradient-card border-border/50">
@@ -60,13 +139,13 @@ export const MarketNews = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {news.map((item) => (
-          <div key={item.id} className="space-y-3 pb-4 border-b border-border/30 last:border-b-0 last:pb-0">
+        {news.map((item, index) => (
+          <div key={index} className="space-y-3 pb-4 border-b border-border/30 last:border-b-0 last:pb-0">
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1">
                 <h4 
                   className="font-semibold text-foreground leading-tight hover:text-primary cursor-pointer transition-colors"
-                  onClick={() => navigate(`/news/${item.id}`)}
+                  onClick={() => handleNewsClick(item)}
                 >
                   {item.title}
                 </h4>
@@ -80,18 +159,16 @@ export const MarketNews = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Badge variant="secondary" className="text-xs">
-                  {item.category}
+                  {item.source}
                 </Badge>
-                <Badge variant="outline" className={`text-xs ${getImpactColor(item.impact)}`}>
-                  {item.impact}
+                <Badge variant="outline" className={`text-xs ${getImpactColor(item.overall_sentiment_score)}`}>
+                  {getImpactLabel(item.overall_sentiment_score)}
                 </Badge>
               </div>
               
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Clock className="h-3 w-3" />
-                <span>{item.time}</span>
-                <span>•</span>
-                <span>{item.source}</span>
+                <span>{formatTime(item.time_published)}</span>
               </div>
             </div>
           </div>

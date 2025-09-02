@@ -1,13 +1,39 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Header } from "@/components/MarketPulse/Header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Clock, ExternalLink } from "lucide-react";
 
+interface LiveArticle {
+  title: string;
+  summary: string;
+  time_published: string;
+  source: string;
+  url: string;
+  overall_sentiment_score?: number;
+}
+
+interface DemoArticle {
+  title: string;
+  content: string;
+  time: string;
+  source: string;
+  category: string;
+  impact: string;
+  author: string;
+  readTime: string;
+}
+
+interface ArticleState {
+  article: LiveArticle;
+}
+
 const NewsArticle = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const state = location.state as ArticleState;
 
   // Mock data - in a real app, this would come from an API
   const articles = {
@@ -61,7 +87,9 @@ Economists now forecast a 70% probability of at least one rate cut by the end of
     }
   };
 
-  const article = articles[id as keyof typeof articles];
+  // Use passed article data or fallback to demo data
+  const passedArticle = state?.article;
+  const article: LiveArticle | DemoArticle | undefined = passedArticle || articles[id as keyof typeof articles];
 
   if (!article) {
     return (
@@ -79,12 +107,75 @@ Economists now forecast a 70% probability of at least one rate cut by the end of
     );
   }
 
-  const getImpactColor = (impact: string) => {
-    switch (impact) {
-      case 'positive': return 'bg-success/20 text-success';
-      case 'negative': return 'bg-danger/20 text-danger';
-      default: return 'bg-muted/20 text-muted-foreground';
+  const getImpactColor = (score?: number) => {
+    if (!score) return 'bg-muted/20 text-muted-foreground';
+    if (score > 0.1) return 'bg-success/20 text-success';
+    if (score < -0.1) return 'bg-danger/20 text-danger';
+    return 'bg-muted/20 text-muted-foreground';
+  };
+
+  const getImpactLabel = (score?: number) => {
+    if (!score) return 'neutral';
+    if (score > 0.1) return 'positive';
+    if (score < -0.1) return 'negative';
+    return 'neutral';
+  };
+
+  const formatTime = (timeString: string) => {
+    if (timeString.includes('T')) {
+      return new Date(timeString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
     }
+    return timeString;
+  };
+
+  // Generate content for passed articles
+  const getArticleContent = (article: LiveArticle | DemoArticle) => {
+    if ('content' in article) return article.content; // Demo article
+    
+    // Generate content for live articles
+    return `${article.summary}
+
+This is a developing story in the financial markets. The article provides insights into current market conditions and their potential impact on investors and the broader economy.
+
+Key takeaways from this report:
+• Market participants are closely monitoring these developments
+• Economic indicators suggest ongoing volatility in this sector
+• Analysts recommend keeping a close watch on related market movements
+• Investor sentiment appears to be influenced by these recent developments
+
+For the most up-to-date information and detailed analysis, please refer to the original source. Market conditions can change rapidly, and investors should consult with financial advisors before making investment decisions.
+
+This article represents current market reporting and analysis as of the publication time. Always verify information with primary sources and consider multiple perspectives when making financial decisions.`;
+  };
+
+  const getSentimentScore = (article: LiveArticle | DemoArticle): number | undefined => {
+    return 'overall_sentiment_score' in article ? article.overall_sentiment_score : undefined;
+  };
+
+  const getImpact = (article: LiveArticle | DemoArticle): string | undefined => {
+    return 'impact' in article ? article.impact : undefined;
+  };
+
+  const getTimeString = (article: LiveArticle | DemoArticle): string => {
+    return 'time_published' in article ? article.time_published : article.time;
+  };
+
+  const getAuthor = (article: LiveArticle | DemoArticle): string | undefined => {
+    return 'author' in article ? article.author : undefined;
+  };
+
+  const getReadTime = (article: LiveArticle | DemoArticle): string | undefined => {
+    return 'readTime' in article ? article.readTime : undefined;
+  };
+
+  const getUrl = (article: LiveArticle | DemoArticle): string | undefined => {
+    return 'url' in article ? article.url : undefined;
   };
 
   return (
@@ -113,24 +204,32 @@ Economists now forecast a 70% probability of at least one rate cut by the end of
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center gap-2">
                 <Badge variant="secondary" className="text-xs">
-                  {article.category}
+                  {article.source}
                 </Badge>
-                <Badge variant="outline" className={`text-xs ${getImpactColor(article.impact)}`}>
-                  {article.impact}
-                </Badge>
+                {(getSentimentScore(article) !== undefined || getImpact(article)) && (
+                  <Badge variant="outline" className={`text-xs ${getImpactColor(getSentimentScore(article))}`}>
+                    {getImpact(article) || getImpactLabel(getSentimentScore(article))}
+                  </Badge>
+                )}
               </div>
               
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <Clock className="h-4 w-4" />
-                  <span>{article.time}</span>
+                  <span>{formatTime(getTimeString(article))}</span>
                 </div>
-                <span>•</span>
-                <span>{article.source}</span>
-                <span>•</span>
-                <span>By {article.author}</span>
-                <span>•</span>
-                <span>{article.readTime}</span>
+                {getAuthor(article) && (
+                  <>
+                    <span>•</span>
+                    <span>By {getAuthor(article)}</span>
+                  </>
+                )}
+                {getReadTime(article) && (
+                  <>
+                    <span>•</span>
+                    <span>{getReadTime(article)}</span>
+                  </>
+                )}
               </div>
             </div>
           </CardContent>
@@ -140,7 +239,7 @@ Economists now forecast a 70% probability of at least one rate cut by the end of
         <Card className="gradient-card border-border/50">
           <CardContent className="p-8">
             <div className="prose prose-lg max-w-none">
-              {article.content.split('\n\n').map((paragraph, index) => (
+              {getArticleContent(article).split('\n\n').map((paragraph, index) => (
                 <p key={index} className="text-foreground leading-relaxed mb-6 last:mb-0">
                   {paragraph}
                 </p>
@@ -151,10 +250,17 @@ Economists now forecast a 70% probability of at least one rate cut by the end of
               <div className="text-sm text-muted-foreground">
                 Source: {article.source}
               </div>
-              <Button variant="outline" size="sm" className="gap-2">
-                <ExternalLink className="h-4 w-4" />
-                View Original
-              </Button>
+              {getUrl(article) && getUrl(article) !== '#' && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-2"
+                  onClick={() => window.open(getUrl(article)!, '_blank')}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  View Original
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
