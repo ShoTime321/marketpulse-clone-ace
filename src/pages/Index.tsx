@@ -4,12 +4,12 @@ import { StockCard } from "@/components/MarketPulse/StockCard";
 import { TradingChart } from "@/components/MarketPulse/TradingChart";
 import { Portfolio } from "@/components/MarketPulse/Portfolio";
 import { MarketNews } from "@/components/MarketPulse/MarketNews";
-import { ApiKeySetup } from "@/components/MarketPulse/ApiKeySetup";
+
 import { StockApiService } from "@/services/stockApi";
 import { useEffect, useState } from "react";
 
 const Index = () => {
-  const [hasApiKey, setHasApiKey] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [stocks, setStocks] = useState([
     { symbol: "AAPL", company: "Apple Inc.", price: 182.52, change: 2.34, changePercent: 1.30 },
     { symbol: "GOOGL", company: "Alphabet Inc.", price: 125.89, change: -1.23, changePercent: -0.97 },
@@ -20,40 +20,28 @@ const Index = () => {
   ]);
 
   useEffect(() => {
-    const apiKey = StockApiService.getApiKey();
-    setHasApiKey(!!apiKey);
+    // Fetch real stock data
+    const symbols = ["AAPL", "GOOGL", "TSLA", "MSFT", "AMZN", "NVDA"];
+    StockApiService.getMultipleStocks(symbols).then(liveStocks => {
+      if (liveStocks.length > 0) {
+        setStocks(liveStocks);
+      }
+      setIsLoading(false);
+    }).catch(error => {
+      console.error('Error fetching live stock data:', error);
+      setIsLoading(false);
+    });
+  }, []);
 
-    if (apiKey) {
-      // Fetch real stock data
-      const symbols = ["AAPL", "GOOGL", "TSLA", "MSFT", "AMZN", "NVDA"];
-      StockApiService.getMultipleStocks(symbols).then(liveStocks => {
-        if (liveStocks.length > 0) {
-          const stocksWithCompanyNames = liveStocks.map(stock => ({
-            ...stock,
-            company: getCompanyName(stock.symbol)
-          }));
-          setStocks(stocksWithCompanyNames);
-        }
-      }).catch(error => {
-        console.error('Error fetching live stock data:', error);
-      });
-    }
-  }, [hasApiKey]);
-
-  const getCompanyName = (symbol: string) => {
-    const companyNames: { [key: string]: string } = {
-      "AAPL": "Apple Inc.",
-      "GOOGL": "Alphabet Inc.",
-      "TSLA": "Tesla Inc.",
-      "MSFT": "Microsoft Corp.",
-      "AMZN": "Amazon.com Inc.",
-      "NVDA": "NVIDIA Corp."
-    };
-    return companyNames[symbol] || symbol;
-  };
-
-  if (!hasApiKey) {
-    return <ApiKeySetup onApiKeySet={() => setHasApiKey(true)} />;
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading market data...</p>
+        </div>
+      </div>
+    );
   }
 
   return (

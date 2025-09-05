@@ -22,14 +22,9 @@ export const MarketNews = () => {
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        const apiKey = StockApiService.getApiKey();
-        if (apiKey) {
-          const liveNews = await StockApiService.getMarketNews();
-          if (liveNews.length > 0) {
-            setNews(liveNews);
-          } else {
-            setNews(fallbackNews);
-          }
+        const liveNews = await StockApiService.getMarketNews();
+        if (liveNews.length > 0) {
+          setNews(liveNews);
         } else {
           setNews(fallbackNews);
         }
