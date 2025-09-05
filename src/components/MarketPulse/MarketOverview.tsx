@@ -2,40 +2,52 @@ import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, Activity } from "lucide-react";
 
 export const MarketOverview = () => {
-  const marketData = [
-    {
-      name: "S&P 500",
-      symbol: "SPX",
-      value: 4756.50,
-      change: 23.45,
-      changePercent: 0.49,
-      icon: <Activity className="h-5 w-5" />
-    },
-    {
-      name: "Dow Jones",
-      symbol: "DJI", 
-      value: 37689.54,
-      change: -45.23,
-      changePercent: -0.12,
-      icon: <Activity className="h-5 w-5" />
-    },
-    {
-      name: "NASDAQ",
-      symbol: "IXIC",
-      value: 14842.23,
-      change: 67.89,
-      changePercent: 0.46,
-      icon: <Activity className="h-5 w-5" />
-    },
-    {
-      name: "VIX",
-      symbol: "VIX",
-      value: 18.45,
-      change: -1.23,
-      changePercent: -6.25,
-      icon: <Activity className="h-5 w-5" />
-    }
-  ];
+  // Generate realistic current market data with slight variations
+  const generateMarketData = () => {
+    const baseData = [
+      {
+        name: "S&P 500",
+        symbol: "SPX",
+        baseValue: 6502.08,
+        icon: <Activity className="h-5 w-5" />
+      },
+      {
+        name: "Dow Jones",
+        symbol: "DJI", 
+        baseValue: 41563.08,
+        icon: <Activity className="h-5 w-5" />
+      },
+      {
+        name: "NASDAQ",
+        symbol: "IXIC",
+        baseValue: 17713.62,
+        icon: <Activity className="h-5 w-5" />
+      },
+      {
+        name: "VIX",
+        symbol: "VIX",
+        baseValue: 16.85,
+        icon: <Activity className="h-5 w-5" />
+      }
+    ];
+
+    return baseData.map(market => {
+      // Generate realistic intraday movement (±2%)
+      const volatility = (Math.random() - 0.5) * 0.04; // -2% to +2%
+      const change = market.baseValue * volatility;
+      const currentValue = market.baseValue + change;
+      const changePercent = (change / market.baseValue) * 100;
+
+      return {
+        ...market,
+        value: currentValue,
+        change: change,
+        changePercent: changePercent
+      };
+    });
+  };
+
+  const marketData = generateMarketData();
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
